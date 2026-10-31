@@ -1,27 +1,87 @@
 name: macOS APP
+
 on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - main.py
+      - requirements.txt
+      - .github/workflows/macos.yml
+
 permissions:
   contents: read
+
 jobs:
   build:
-    runs-on: macos-14
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            arch: Intel
+          - runner: macos-15
+            arch: AppleSilicon
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Baixar o codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: pip
           cache-dependency-path: requirements.txt
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -r requirements.txt pyinstaller
-      - run: python -m compileall -q main.py
-      - run: python -m PyInstaller --clean --noconfirm --onedir --windowed --name Chimpi3D --osx-bundle-identifier com.chimpiai.chimpi3d --collect-all pyqtgraph --collect-all OpenGL main.py
-      - run: ditto -c -k --sequesterRsrc --keepParent dist/Chimpi3D.app Chimpi3D-macOS-Intel.app.zip
-      - uses: actions/upload-artifact@v4
+
+      - name: Mostrar arquitetura do Mac
+        shell: bash
+        run: |
+          sw_vers
+          uname -m
+          python --version
+
+      - name: Instalar dependencias
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt 'pyinstaller>=6.10,<7'
+
+      - name: Validar imports
+        shell: bash
+        run: |
+          python -m compileall -q main.py
+          python -c "import numpy, trimesh, PIL, requests, PySide6, pyqtgraph.opengl, OpenGL; print('Imports OK')"
+
+      - name: Compilar aplicativo macOS
+        shell: bash
+        run: |
+          python -m PyInstaller --clean --noconfirm --onedir --windowed \
+            --name Chimpi3D \
+            --osx-bundle-identifier com.chimpiai.chimpi3d \
+            --hidden-import PySide6.QtOpenGLWidgets \
+            --collect-all pyqtgraph \
+            --collect-all OpenGL \
+            main.py
+
+      - name: Verificar e empacotar .app
+        shell: bash
+        run: |
+          test -d dist/Chimpi3D.app
+          test -f dist/Chimpi3D.app/Contents/MacOS/Chimpi3D
+          file dist/Chimpi3D.app/Contents/MacOS/Chimpi3D
+          ditto -c -k --sequesterRsrc --keepParent \
+            dist/Chimpi3D.app \
+            "Chimpi3D-macOS-${{ matrix.arch }}.app.zip"
+          test -s "Chimpi3D-macOS-${{ matrix.arch }}.app.zip"
+
+      - name: Disponibilizar download
+        uses: actions/upload-artifact@v4
         with:
-          name: Chimpi3D-macOS-APP
-          path: Chimpi3D-macOS-Intel.app.zip
+          name: Chimpi3D-macOS-${{ matrix.arch }}
+          path: Chimpi3D-macOS-${{ matrix.arch }}.app.zip
           if-no-files-found: error
+          retention-days: 30
