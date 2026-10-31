@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      - name: Baixar o codigo
+      - name: Baixar o projeto
         uses: actions/checkout@v4
 
       - name: Configurar Python
@@ -37,38 +37,36 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
-      - name: Mostrar arquitetura do Mac
-        shell: bash
+      - name: Informacoes da arquitetura
         run: |
           sw_vers
           uname -m
           python --version
 
-      - name: Instalar dependencias
-        shell: bash
+      - name: Instalar Python e PyInstaller
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt 'pyinstaller>=6.10,<7'
 
-      - name: Validar imports
-        shell: bash
+      - name: Checar codigo e imports
         run: |
           python -m compileall -q main.py
-          python -c "import numpy, trimesh, PIL, requests, PySide6, pyqtgraph.opengl, OpenGL; print('Imports OK')"
+          python -c "import numpy, trimesh, PIL, requests, PySide6.QtWidgets, PySide6.QtOpenGLWidgets, pyqtgraph.opengl, OpenGL; print('Imports OK')"
 
-      - name: Compilar aplicativo macOS
-        shell: bash
+      - name: Compilar Chimpi3D.app
         run: |
           python -m PyInstaller --clean --noconfirm --onedir --windowed \
             --name Chimpi3D \
             --osx-bundle-identifier com.chimpiai.chimpi3d \
             --hidden-import PySide6.QtOpenGLWidgets \
-            --collect-all pyqtgraph \
+            --hidden-import pyqtgraph.opengl \
+            --exclude-module pyqtgraph.examples \
+            --exclude-module pyqtgraph.jupyter \
+            --collect-data pyqtgraph \
             --collect-all OpenGL \
             main.py
 
-      - name: Verificar e empacotar .app
-        shell: bash
+      - name: Conferir e empacotar o aplicativo
         run: |
           test -d dist/Chimpi3D.app
           test -f dist/Chimpi3D.app/Contents/MacOS/Chimpi3D
@@ -78,7 +76,7 @@ jobs:
             "Chimpi3D-macOS-${{ matrix.arch }}.app.zip"
           test -s "Chimpi3D-macOS-${{ matrix.arch }}.app.zip"
 
-      - name: Disponibilizar download
+      - name: Publicar artefato macOS
         uses: actions/upload-artifact@v4
         with:
           name: Chimpi3D-macOS-${{ matrix.arch }}
