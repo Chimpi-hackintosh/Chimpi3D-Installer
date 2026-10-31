@@ -1,0 +1,26 @@
+name: Windows EXE
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.txt pyinstaller
+      - run: python -m compileall -q main.py
+      - run: python -m PyInstaller --clean --noconfirm --onefile --windowed --name Chimpi3D --collect-all pyqtgraph --collect-all OpenGL main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Chimpi3D-Windows-EXE
+          path: dist/Chimpi3D.exe
+          if-no-files-found: error
