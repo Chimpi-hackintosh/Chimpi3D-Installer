@@ -29,10 +29,17 @@ jobs:
         shell: pwsh
         run: |
           if (!(Test-Path Chimpi3D-Setup-Windows.exe)) { throw 'Instalador NSIS ausente' }
+      - name: Preparar arquivos de download na raiz
+        shell: pwsh
+        run: |
+          Copy-Item dist/Chimpi3D.exe Chimpi3D.exe
+          if (!(Test-Path Chimpi3D.exe) -or !(Test-Path Chimpi3D-Setup-Windows.exe)) {
+            throw 'Executáveis Windows ausentes'
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: Chimpi3D-Windows-EXE
           path: |
-            dist/Chimpi3D.exe
+            Chimpi3D.exe
             Chimpi3D-Setup-Windows.exe
           if-no-files-found: error
