@@ -1,4 +1,4 @@
-name: Publicar Chimpi3D no Release
+name: Publicar Chimpi3D nos Releases
 
 on:
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
     uses: ./.github/workflows/macos.yml
 
   release:
-    name: Publicar todos os executaveis no GitHub Release
+    name: Publicar todos os executáveis no GitHub Releases
     needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     permissions:
@@ -59,20 +59,20 @@ jobs:
         with:
           tag_name: v0.2.0-build-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
-          name: Chimpi3D 0.2.0 - Build ${{ github.run_number }}
+          name: Chimpi3D 0.2.0 • Compilação ${{ github.run_number }}
           make_latest: true
           prerelease: false
           fail_on_unmatched_files: true
           body: |
-            Chimpi3D 0.2.0 - compilacao automatica para Windows, Linux e macOS.
+            Chimpi3D 0.2.0 • Compilação automática para Windows, Linux e macOS
 
             - Windows: Chimpi3D.exe
             - Linux x86_64: Chimpi3D-Linux-x86_64.tar.gz (extraia a pasta completa)
             - macOS Intel: Chimpi3D-macOS-Intel.app.zip
             - macOS Apple Silicon: Chimpi3D-macOS-AppleSilicon.app.zip
 
-            Programa experimental. Compilacao verificada no GitHub Actions; a interface grafica nao foi testada em todos os computadores.
-            Os apps para macOS nao possuem assinatura/notarizacao da Apple.
+            Programa experimental. Compilação verificada no GitHub Actions; a interface gráfica não foi testada em todos os computadores
+            Os aplicativos para macOS não possuem assinatura digital nem notarização da Apple
           files: |
             release/Chimpi3D.exe
             release/Chimpi3D-Linux-x86_64.tar.gz

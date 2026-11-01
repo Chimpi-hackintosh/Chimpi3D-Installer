@@ -1,4 +1,4 @@
-name: Windows EXE
+name: Windows • Executável
 on:
   workflow_call:
   workflow_dispatch:

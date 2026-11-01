@@ -1,4 +1,4 @@
-name: Linux Executable
+name: Linux • Executável
 
 on:
   workflow_call:
@@ -37,7 +37,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt 'pyinstaller>=6.10,<7'
 
-      - name: Checar codigo e imports sem abrir uma janela
+      - name: Verificar código e importações sem abrir uma janela
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
@@ -58,7 +58,7 @@ jobs:
             --collect-all OpenGL \
             main.py
 
-      - name: Conferir executavel e criar pacote
+      - name: Conferir executável e criar pacote
         run: |
           test -x dist/Chimpi3D/Chimpi3D
           file dist/Chimpi3D/Chimpi3D

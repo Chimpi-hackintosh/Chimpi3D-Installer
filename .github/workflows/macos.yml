@@ -1,4 +1,4 @@
-name: macOS APP
+name: macOS • Aplicativo
 
 on:
   workflow_call:
@@ -32,7 +32,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
-      - name: Informacoes da arquitetura
+      - name: Informações da arquitetura
         run: |
           sw_vers
           uname -m
@@ -43,7 +43,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt 'pyinstaller>=6.10,<7'
 
-      - name: Checar codigo e imports
+      - name: Verificar código e importações
         run: |
           python -m compileall -q main.py
           python -c "import numpy, trimesh, PIL, requests, PySide6.QtWidgets, PySide6.QtOpenGLWidgets, pyqtgraph.opengl, OpenGL; print('Imports OK')"
