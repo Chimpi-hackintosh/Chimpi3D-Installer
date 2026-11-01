@@ -326,4 +326,6 @@ if __name__ == "__main__":
     application.setStyle("Fusion")
     app = Chimpi3D()
     app.show()
+    from support_notice import attach_qt
+    attach_qt(app, "Chimpi3D-Installer", "0.3.1")
     sys.exit(application.exec())
