@@ -38,8 +38,8 @@ def check(bundle):
         result = subprocess.run(["otool", "-l", str(path)], capture_output=True, text=True)
         if result.returncode:
             raise RuntimeError(f"Falha ao verificar o binário: {path}")
-        commands = re.findall(r"cmd LC_BUILD_VERSION[\\s\\S]*?cmdsize \\d+[\\s\\S]*?minos ([0-9.]+)", result.stdout)
-        commands += re.findall(r"cmd LC_VERSION_MIN_MACOSX[\\s\\S]*?cmdsize \\d+[\\s\\S]*?version ([0-9.]+)", result.stdout)
+        commands = re.findall(r"cmd LC_BUILD_VERSION[\s\S]*?cmdsize \d+[\s\S]*?minos ([0-9.]+)", result.stdout)
+        commands += re.findall(r"cmd LC_VERSION_MIN_MACOSX[\s\S]*?cmdsize \d+[\s\S]*?version ([0-9.]+)", result.stdout)
         if not commands:
             raise RuntimeError(f"Sem alvo mínimo detectável no binário: {path}")
         for value in commands:
