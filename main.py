@@ -8,13 +8,16 @@ from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QListWidget, QFileDialog, QMessageBox, QInputDialog, QSplitter, QComboBox
 import pyqtgraph.opengl as gl
+from chimpi_features import NFCWallet, rounded_square
 
 class Chimpi3D(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Chimpi3D 0.2.0")
+        self.setWindowTitle("Chimpi3D 0.3.0")
         self.resize(1170, 730)
         self.meshes = []
+        self.nfc_tags = []
+        self.wallet = NFCWallet()
         self.visible = []
         central = QWidget()
         self.setCentralWidget(central)
@@ -38,7 +41,7 @@ class Chimpi3D(QMainWindow):
         self.objects = QListWidget()
         self.objects.currentRowChanged.connect(self.redraw)
         l.addWidget(self.objects)
-        for shape in ("Cubo", "Esfera", "Cilindro", "Cone"):
+        for shape in ("Cubo", "Esfera", "Cilindro", "Cone", "Quadrado UICorner"):
             b = QPushButton("Adicionar " + shape)
             b.clicked.connect(lambda checked=False, s=shape: self.primitive(s))
             l.addWidget(b)
@@ -47,6 +50,19 @@ class Chimpi3D(QMainWindow):
             b = QPushButton(name)
             b.clicked.connect(callback)
             l.addWidget(b)
+        l.addWidget(QLabel("NFC VIRTUAL (OPCIONAL)"))
+        self.nfc_balance = QLabel()
+        l.addWidget(self.nfc_balance)
+        for title, callback in (
+            ("Resgatar código NFC", self.redeem_nfc),
+            ("Vincular TAG ao objeto", self.attach_nfc),
+            ("Remover TAG do objeto", self.detach_nfc),
+            ("Exportar TAGs (.json)", self.export_nfc),
+        ):
+            button = QPushButton(title)
+            button.clicked.connect(callback)
+            l.addWidget(button)
+        self.update_nfc_label()
         panes.addWidget(left)
         self.view = gl.GLViewWidget()
         self.view.setCameraPosition(distance=18, elevation=30)
@@ -92,6 +108,7 @@ class Chimpi3D(QMainWindow):
         if not isinstance(mesh, trimesh.Trimesh) or mesh.is_empty:
             raise ValueError("Modelo vazio ou inválido")
         self.meshes.append(mesh)
+        self.nfc_tags.append(None)
         self.objects.addItem(name)
         self.objects.setCurrentRow(len(self.meshes)-1)
         self.redraw()
@@ -112,7 +129,8 @@ class Chimpi3D(QMainWindow):
             self.visible.append(item)
 
     def primitive(self, shape):
-        if shape == "Cubo": mesh = trimesh.creation.box(extents=(2, 2, 2))
+        if shape == "Quadrado UICorner": mesh = rounded_square()
+        elif shape == "Cubo": mesh = trimesh.creation.box(extents=(2, 2, 2))
         elif shape == "Esfera": mesh = trimesh.creation.icosphere(subdivisions=2)
         elif shape == "Cilindro": mesh = trimesh.creation.cylinder(radius=1, height=2)
         else: mesh = trimesh.creation.cone(radius=1, height=2)
@@ -146,6 +164,8 @@ class Chimpi3D(QMainWindow):
         i = self.current()
         if i is not None:
             self.meshes.pop(i)
+            self.wallet.return_tag(self.nfc_tags.pop(i))
+            self.update_nfc_label()
             self.objects.takeItem(i)
             self.redraw()
 
@@ -187,7 +207,9 @@ class Chimpi3D(QMainWindow):
         path = QFileDialog.getSaveFileName(self,"Salvar","projeto.chimpi3d","Chimpi3D (*.chimpi3d)")[0]
         if path:
             obj = {"format": "chimpi3d-1", "meshes": [
-                {"vertices": m.vertices.tolist(), "faces": m.faces.tolist()} for m in self.meshes
+                {"vertices": m.vertices.tolist(), "faces": m.faces.tolist(),
+                 "nfc": self.nfc_tags[i], "name": self.objects.item(i).text()}
+                for i, m in enumerate(self.meshes)
             ]}
             Path(path).write_text(json.dumps(obj), encoding="utf-8")
 
@@ -198,11 +220,60 @@ class Chimpi3D(QMainWindow):
                 obj = json.loads(Path(path).read_text(encoding="utf-8"))
                 if obj.get("format") != "chimpi3d-1": raise ValueError("Formato inválido")
                 self.meshes.clear()
+                self.nfc_tags.clear()
                 self.objects.clear()
                 for entry in obj.get("meshes", []):
                     self.add(trimesh.Trimesh(vertices=entry["vertices"],
-                                            faces=entry["faces"]), "Objeto")
+                                            faces=entry["faces"]), entry.get("name", "Objeto"))
+                    self.nfc_tags[-1] = entry.get("nfc")
             except Exception as e: self.alert(e)
+
+    def update_nfc_label(self):
+        self.nfc_balance.setText(f"TAGs virtuais disponíveis: {self.wallet.balance}")
+
+    def redeem_nfc(self):
+        code, ok = QInputDialog.getText(self, "Resgatar TAGs NFC", "Código de resgate")
+        if not ok:
+            return
+        if self.wallet.redeem(code):
+            self.alert("NFC300 resgatado: +300 TAGs VIRTUAIS para vincular aos objetos!")
+        else:
+            self.alert("Código inválido ou já resgatado neste computador")
+        self.update_nfc_label()
+
+    def attach_nfc(self):
+        i = self.current()
+        if i is None:
+            self.alert("Selecione um objeto 3D primeiro")
+            return
+        if self.nfc_tags[i]:
+            self.alert("Este objeto já possui uma TAG NFC virtual")
+            return
+        try:
+            self.nfc_tags[i] = self.wallet.issue()
+            self.update_nfc_label()
+            self.alert("TAG virtual vinculada ao objeto. Não é um chip NFC físico")
+        except Exception as exc:
+            self.alert(exc)
+
+    def detach_nfc(self):
+        i = self.current()
+        if i is None:
+            return
+        self.wallet.return_tag(self.nfc_tags[i])
+        self.nfc_tags[i] = None
+        self.update_nfc_label()
+
+    def export_nfc(self):
+        path = QFileDialog.getSaveFileName(self, "Exportar etiquetas virtuais",
+                                           "chimpi3d-nfc.json", "JSON (*.json)")[0]
+        if path:
+            data = [{"objeto": self.objects.item(i).text(), "tag_virtual": tag}
+                    for i, tag in enumerate(self.nfc_tags) if tag]
+            Path(path).write_text(json.dumps({"tipo": "nfc-virtual",
+                                              "objetos": data}, ensure_ascii=False, indent=2),
+                                  encoding="utf-8")
+            self.alert(f"{len(data)} TAGs virtuais exportadas como metadados JSON")
 
     def ai_generate(self):
         prompt = self.prompt.text().strip()
