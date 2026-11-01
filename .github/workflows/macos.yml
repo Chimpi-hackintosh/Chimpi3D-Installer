@@ -20,6 +20,8 @@ jobs:
             arch: AppleSilicon
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '12.0'
 
     steps:
       - name: Baixar o projeto
@@ -30,7 +32,9 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: |
+            requirements.txt
+            requirements-macos.txt
 
       - name: Informações da arquitetura
         run: |
@@ -41,7 +45,8 @@ jobs:
       - name: Instalar Python e PyInstaller
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt 'pyinstaller>=6.10,<7'
+          python -m pip install -r requirements-macos.txt 'pyinstaller>=6.10,<7'
+          python -c "from PySide6.QtCore import __version__; print('PySide6 macOS:', __version__)"
 
       - name: Verificar código e importações
         run: |
@@ -65,6 +70,10 @@ jobs:
             --collect-data pyqtgraph \
             --collect-all OpenGL \
             main.py
+
+      - name: Validar versão mínima Monterey 12
+        run: |
+          python scripts/check_macos_compat.py dist/Chimpi3D.app
 
       - name: Compilar comando of
         run: |

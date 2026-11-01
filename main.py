@@ -13,7 +13,7 @@ from chimpi_features import NFCWallet, rounded_square
 class Chimpi3D(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Chimpi3D 0.3.0")
+        self.setWindowTitle("Chimpi3D 0.3.1")
         self.resize(1170, 730)
         self.meshes = []
         self.nfc_tags = []

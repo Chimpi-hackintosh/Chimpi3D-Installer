@@ -6,7 +6,9 @@ on:
     branches: [main]
     paths:
       - main.py
-      - chimp_features.py
+      - chimpi_features.py
+      - requirements-macos.txt
+      - scripts/**
       - of_cli.py
       - installer/**
       - tests/**
@@ -71,14 +73,14 @@ jobs:
       - name: Criar Release e anexar todos os aplicativos
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.3.0-build-${{ github.run_number }}
+          tag_name: v0.3.1-build-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
-          name: Chimpi3D 0.3.0 • Compilação ${{ github.run_number }}
+          name: Chimpi3D 0.3.1 • Compilação ${{ github.run_number }}
           make_latest: true
           prerelease: false
           fail_on_unmatched_files: true
           body: |
-            Chimpi3D 0.3.0 • Compilação automática para Windows, Linux e macOS
+            Chimpi3D 0.3.1 • Compilação automática para Windows, Linux e macOS
 
             - Windows (executável): Chimpi3D.exe
             - Windows (instalador NSIS): Chimpi3D-Setup-Windows.exe
@@ -89,6 +91,8 @@ jobs:
             Programa experimental. Compilação verificada no GitHub Actions; a interface gráfica não foi testada em todos os computadores
             NFC300: 300 etiquetas virtuais opcionais por instalação local, sem chips físicos
             Quadrado com cantos arredondados no estilo UICorner e comando 'of' incluído no instalador
+            macOS: alvo mínimo Monterey 12 (Qt/PySide6 6.8), até Golden Gate 27 (Apple Silicon)
+            O alvo mínimo é conferido em binários principais, mas requer testes de execução em cada versão
             Os aplicativos para macOS não possuem assinatura digital nem notarização da Apple
           files: |
             release/Chimpi3D.exe

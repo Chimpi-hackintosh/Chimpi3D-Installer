@@ -1,4 +1,4 @@
-# Chimpi3D 0.3.0 🐒
+# Chimpi3D 0.3.1 🐒
 
 Aplicativo experimental de modelagem 3D para Windows, Linux e macOS, com importação OBJ/STL, relevo a partir de PNG, biblioteca externa do Thingiverse e ChimpiAI (Ollama local opcional)
 
@@ -50,7 +50,7 @@ of my pc --os Windows --os-version 11-NT install Chimpi3D
 **macOS (pacote original publicado):**
 
 ```sh
-of my pc --os macOS --os-version 28-GoldenGate install Chimpi3D --original
+of my pc --os macOS --os-version 27-GoldenGate install Chimpi3D --original
 ```
 
 **Linux Mint:**
@@ -65,7 +65,38 @@ A instalação busca **automaticamente** o aplicativo no GitHub Releases oficial
 
 **Primeira instalação do `of`:** no Windows, o instalador NSIS inclui e registra `of.exe` no PATH do usuário; abra um novo terminal após a instalação. No Linux e macOS, o executável `of` acompanha os arquivos distribuídos e precisa estar disponível no diretório `~/.local/bin` incluído no PATH para ser chamado somente por `of`
 
-Os parâmetros `11-NT` e `28-GoldenGate` são **rótulos aceitos** pela ferramenta, não uma confirmação de compatibilidade dessas versões. O instalador identifica o sistema operacional real antes de instalar, e os pacotes macOS não são assinados ou notarizados pela Apple
+Os parâmetros `11-NT` e `27-GoldenGate` são **rótulos aceitos** pela ferramenta, não uma confirmação de compatibilidade dessas versões. O instalador identifica o sistema operacional real antes de instalar, e os pacotes macOS não são assinados ou notarizados pela Apple
+
+## 🍎 macOS Monterey 12 até Golden Gate 27
+
+A versão 0.3.1 mira a **compatibilidade com o macOS 12 Monterey até o macOS 27 Golden Gate**:
+
+| Versão | Nome | Arquitetura prevista |
+|---|---|---|
+| 12 | Monterey | Intel e Apple Silicon |
+| 13 | Ventura | Intel e Apple Silicon |
+| 14 | Sonoma | Intel e Apple Silicon |
+| 15 | Sequoia | Intel e Apple Silicon |
+| 26 | Tahoe | Macs Intel ou Apple Silicon que a Apple aceitar |
+| 27 | Golden Gate (2026) | **Apple Silicon**, conforme a Apple |
+
+**O que mudou tecnicamente:** os dois workflows macOS instalam **PySide6 6.8.3 / Qt 6.8**, cujo alvo oficial começa no macOS 12, e usam `MACOSX_DEPLOYMENT_TARGET=12.0`. Uma checagem lê a versão mínima declarada no `.app` e nos binários principais do Qt e interrompe a publicação se exigirem uma versão acima do Monterey
+
+**O que ainda precisa de teste:** a validação do build **não comprova que a GUI e todas as bibliotecas funcionam nas seis versões**. O GitHub Actions compila nos ambientes macOS 15 da Apple, então testes em Monterey, Ventura, Sonoma, Sequoia, Tahoe e Golden Gate continuam necessários
+
+**Exemplo macOS Monterey:**
+
+```sh
+of my pc --os macOS --os-version 12-Monterey install Chimpi3D --original
+```
+
+**Exemplo macOS Golden Gate:**
+
+```sh
+of my pc --os macOS --os-version 27-GoldenGate install Chimpi3D --original
+```
+
+O `of` verifica se a versão informada corresponde **à versão realmente instalada** e rejeita `28-GoldenGate`, pois o nome correto é macOS **27**
 
 ## ✨ Outras funcionalidades
 

@@ -22,6 +22,51 @@ API = f"https://api.github.com/repos/{OWNER}/{REPOSITORY}/releases/latest"
 RELEASE_PATH = f"/{OWNER}/{REPOSITORY}/releases/download/"
 MAX_BYTES = 700 * 1024 * 1024
 
+MACOS_NAMES = {
+    12: "Monterey", 13: "Ventura", 14: "Sonoma",
+    15: "Sequoia", 26: "Tahoe", 27: "GoldenGate",
+}
+
+
+def parse_macos_version(value):
+    """Valida versões oficiais macOS 12 a 27 e nomes opcionais."""
+    match = re.fullmatch(r"([0-9]{1,2})(?:-(.+))?", str(value).strip())
+    if not match:
+        raise ValueError("Versão macOS inválida, exemplo: 27-GoldenGate")
+    major = int(match.group(1))
+    expected = MACOS_NAMES.get(major)
+    if expected is None:
+        raise ValueError("Versão macOS fora da lista: 12, 13, 14, 15, 26 ou 27")
+    if match.group(2):
+        given = re.sub(r"[^a-z0-9]", "", match.group(2).casefold())
+        canonical = re.sub(r"[^a-z0-9]", "", expected.casefold())
+        if given != canonical:
+            raise ValueError(f"macOS {major} é {expected}, não {match.group(2)}")
+    return major
+
+
+def validate_macos_environment(declared_version=None, actual_version=None, architecture=None):
+    """Não permitir que um parâmetro arbitrário finja ser o macOS instalado."""
+    detected = actual_version if actual_version is not None else platform.mac_ver()[0]
+    if not detected:
+        raise ValueError("Não foi possível detectar a versão do macOS instalado")
+    major = int(detected.split(".", 1)[0])
+    if major not in MACOS_NAMES:
+        raise ValueError(f"macOS {major} não está na faixa documentada 12 a 27")
+    if declared_version is not None and parse_macos_version(declared_version) != major:
+        raise ValueError(
+            f"Este Mac usa macOS {major} ({MACOS_NAMES[major]}), "
+            f"mas o parâmetro informou {declared_version}"
+        )
+    arch = (architecture or platform.machine()).lower()
+    if major == 27 and arch not in ("arm64", "aarch64"):
+        raise ValueError("macOS 27 Golden Gate requer Apple Silicon")
+    if arch not in ("arm64", "aarch64", "x86_64", "amd64"):
+        raise ValueError("Arquitetura de Mac não reconhecida: " + arch)
+    return major
+
+
+
 
 def parse_command(argv):
     if argv == ["--version"]:
@@ -53,7 +98,7 @@ def parse_command(argv):
 
 
 def _get_json(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Chimpi3D-of/0.3.0", "Accept": "application/vnd.github+json"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Chimpi3D-of/0.3.1", "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=30) as response:
         return json.load(response)
 
@@ -67,7 +112,7 @@ def _download(asset, target):
     expected_length = asset.get("size")
     if expected_length and expected_length > MAX_BYTES:
         raise ValueError("Arquivo de instalação acima do limite permitido")
-    req = urllib.request.Request(url, headers={"User-Agent": "Chimpi3D-of/0.3.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Chimpi3D-of/0.3.1"})
     digest = hashlib.sha256()
     count = 0
     with urllib.request.urlopen(req, timeout=120) as response, open(target, "wb") as out:
@@ -154,8 +199,11 @@ def install(opts):
     actual = {"Windows": "Windows", "Linux": "Linux", "macOS": "Darwin"}[os_name]
     if platform.system() != actual:
         raise ValueError("O sistema informado não corresponde ao computador atual")
-    if "--os-version" in opts:
-        print("Versão informada:", opts["--os-version"], "(rótulo fornecido, não valida compatibilidade)")
+    if os_name == "macOS":
+        actual_major = validate_macos_environment(opts.get("--os-version"))
+        print("macOS detectado:", actual_major, MACOS_NAMES[actual_major])
+    elif "--os-version" in opts:
+        print("Versão informada:", opts["--os-version"], "(não garante compatibilidade)")
     if "--edition" in opts:
         print("Distribuição informada:", opts["--edition"])
     print("Fonte oficial:", API)
@@ -193,7 +241,7 @@ def main(argv=None):
     try:
         opts = parse_command(list(sys.argv[1:] if argv is None else argv))
         if opts.get("version"):
-            print("of 0.3.0")
+            print("of 0.3.1")
             return 0
         install(opts)
         return 0

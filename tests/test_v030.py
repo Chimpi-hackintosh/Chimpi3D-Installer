@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from chimpi_features import NFCWallet, rounded_square
-from of_cli import _verify, parse_command
+from of_cli import _verify, parse_command, parse_macos_version, validate_macos_environment
 
 
 class FeatureTests(unittest.TestCase):
@@ -39,8 +39,27 @@ class FeatureTests(unittest.TestCase):
         self.assertEqual(cmd["--os-version"], "11-NT")
 
     def test_macos_command(self):
-        cmd = parse_command("my pc --os macOS --os-version 28-GoldenGate install Chimpi3D --original".split())
+        cmd = parse_command("my pc --os macOS --os-version 27-GoldenGate install Chimpi3D --original".split())
         self.assertTrue(cmd["original"])
+
+    def test_macos_12_to_27(self):
+        examples = {
+            12: "12-Monterey", 13: "13-Ventura", 14: "14-Sonoma",
+            15: "15-Sequoia", 26: "26-Tahoe", 27: "27-GoldenGate",
+        }
+        for number, label in examples.items():
+            self.assertEqual(parse_macos_version(label), number)
+            arch = "arm64" if number == 27 else "x86_64"
+            self.assertEqual(validate_macos_environment(label, str(number) + ".0", arch), number)
+
+    def test_wrong_macos_names_or_installed_version(self):
+        for label in ("28-GoldenGate", "27-Tahoe", "11-BigSur"):
+            with self.assertRaises(ValueError):
+                parse_macos_version(label)
+        with self.assertRaises(ValueError):
+            validate_macos_environment("27-GoldenGate", "12.7.6", "arm64")
+        with self.assertRaises(ValueError):
+            validate_macos_environment("27-GoldenGate", "27.0", "x86_64")
 
     def test_linux_mint_command(self):
         cmd = parse_command("my pc --os Linux --edition Linux Mint install Chimpi3D".split())
