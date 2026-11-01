@@ -1,0 +1,206 @@
+"""CLI of my pc: instala Chimpi3D de um Release oficial, com verificação SHA-256.
+
+O executável 'of' precisa estar instalado antes do uso. Não existe instalação
+sem que os bytes do aplicativo sejam obtidos de alguma origem.
+"""
+import hashlib
+import json
+import os
+import platform
+import re
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import urllib.request
+from pathlib import Path
+
+OWNER = "Chimpi-hackintosh"
+REPOSITORY = "Chimpi3D-Installer"
+API = f"https://api.github.com/repos/{OWNER}/{REPOSITORY}/releases/latest"
+RELEASE_PATH = f"/{OWNER}/{REPOSITORY}/releases/download/"
+MAX_BYTES = 700 * 1024 * 1024
+
+
+def parse_command(argv):
+    if argv == ["--version"]:
+        return {"version": True}
+    if len(argv) < 5 or argv[:2] != ["my", "pc"] or "install" not in argv:
+        raise ValueError("Uso: of my pc --os Windows|Linux|macOS [--os-version VERSÃO] [--edition EDIÇÃO] install Chimpi3D [--original]")
+    idx = argv.index("install")
+    parameters = argv[2:idx]
+    opts = {}
+    i = 0
+    while i < len(parameters):
+        key = parameters[i]
+        if key not in ("--os", "--os-version", "--edition") or key in opts:
+            raise ValueError("Opção desconhecida ou repetida: " + key)
+        j = i + 1
+        while j < len(parameters) and not parameters[j].startswith("--"):
+            j += 1
+        if j == i + 1:
+            raise ValueError("Falta valor para " + key)
+        opts[key] = " ".join(parameters[i + 1:j])
+        i = j
+    extra = argv[idx + 1:]
+    if extra not in (["Chimpi3D"], ["Chimpi3D", "--original"]):
+        raise ValueError("Use 'install Chimpi3D', com --original opcional no final")
+    if opts.get("--os") not in ("Windows", "Linux", "macOS"):
+        raise ValueError("Informe --os Windows, Linux ou macOS")
+    opts["original"] = extra[-1] == "--original"
+    return opts
+
+
+def _get_json(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Chimpi3D-of/0.3.0", "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=30) as response:
+        return json.load(response)
+
+
+def _download(asset, target):
+    from urllib.parse import urlparse
+    url = asset.get("browser_download_url", "")
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.hostname != "github.com" or not parsed.path.startswith(RELEASE_PATH):
+        raise ValueError("URL de download não pertence aos Releases oficiais")
+    expected_length = asset.get("size")
+    if expected_length and expected_length > MAX_BYTES:
+        raise ValueError("Arquivo de instalação acima do limite permitido")
+    req = urllib.request.Request(url, headers={"User-Agent": "Chimpi3D-of/0.3.0"})
+    digest = hashlib.sha256()
+    count = 0
+    with urllib.request.urlopen(req, timeout=120) as response, open(target, "wb") as out:
+        while True:
+            chunk = response.read(1024 * 1024)
+            if not chunk:
+                break
+            count += len(chunk)
+            if count > MAX_BYTES:
+                raise ValueError("Download excedeu o limite de tamanho")
+            digest.update(chunk)
+            out.write(chunk)
+    if expected_length and count != expected_length:
+        raise ValueError("Download incompleto")
+    return digest.hexdigest()
+
+
+def _verify(checksums, filename, digest):
+    match = re.search(r"(?m)^([a-fA-F0-9]{64})\\s+\\*?" + re.escape(filename) + r"$", checksums)
+    if not match or digest.lower() != match.group(1).lower():
+        raise ValueError("A verificação SHA-256 falhou. Instalação cancelada")
+
+
+def _install_linux(archive, location):
+    destination = Path.home() / ".local" / "share" / "Chimpi3D"
+    with tarfile.open(archive, "r:gz") as tf:
+        if not hasattr(tarfile, "data_filter"):
+            raise RuntimeError("Atualize o Python: extração segura requer tarfile.data_filter")
+        tf.extractall(location, filter="data")
+    src = location / "Chimpi3D"
+    if not (src / "Chimpi3D").is_file() or not (src / "of").is_file():
+        raise ValueError("Pacote Linux incompleto")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    backup = location / "backup-linux"
+    if destination.exists():
+        shutil.move(str(destination), str(backup))
+    try:
+        shutil.copytree(src, destination, symlinks=True)
+    except Exception:
+        if backup.exists():
+            shutil.move(str(backup), str(destination))
+        raise
+    bin_dir = Path.home() / ".local" / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    launcher = bin_dir / "Chimpi3D"
+    launcher.write_text('#!/bin/sh\\nexec "$HOME/.local/share/Chimpi3D/Chimpi3D" "$@"\\n', encoding="utf-8")
+    launcher.chmod(0o755)
+    shutil.copy2(src / "of", bin_dir / "of")
+    (bin_dir / "of").chmod(0o755)
+    print("Chimpi3D instalado em", destination)
+    print("Certifique-se de incluir ~/.local/bin no PATH do terminal")
+
+
+def _install_macos(archive, location):
+    # O ditto preserva links simbólicos e metadados dentro de bundles .app
+    subprocess.run(["ditto", "-x", "-k", str(archive), str(location)], check=True)
+    apps = list(location.rglob("Chimpi3D.app"))
+    if len(apps) != 1 or not (apps[0] / "Contents" / "MacOS" / "Chimpi3D").is_file():
+        raise ValueError("Aplicativo macOS não encontrado no ZIP")
+    src = apps[0]
+    dest = Path.home() / "Applications" / "Chimpi3D.app"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    backup = location / "backup-macos.app"
+    if dest.exists():
+        shutil.move(str(dest), str(backup))
+    try:
+        shutil.copytree(src, dest, symlinks=True)
+    except Exception:
+        if backup.exists():
+            shutil.move(str(backup), str(dest))
+        raise
+    of_files = [p for p in location.rglob("of") if p.is_file()]
+    if of_files:
+        bin_dir = Path.home() / ".local" / "bin"
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(of_files[0], bin_dir / "of")
+        (bin_dir / "of").chmod(0o755)
+    print("Chimpi3D instalado em", dest)
+    print("O aplicativo não é notarizado pela Apple. Respeite as verificações de segurança do macOS")
+
+
+def install(opts):
+    os_name = opts["--os"]
+    actual = {"Windows": "Windows", "Linux": "Linux", "macOS": "Darwin"}[os_name]
+    if platform.system() != actual:
+        raise ValueError("O sistema informado não corresponde ao computador atual")
+    if "--os-version" in opts:
+        print("Versão informada:", opts["--os-version"], "(rótulo fornecido, não valida compatibilidade)")
+    if "--edition" in opts:
+        print("Distribuição informada:", opts["--edition"])
+    print("Fonte oficial:", API)
+    print("A instalação fará download automaticamente e verificará o SHA-256")
+    release = _get_json(API)
+    if not str(release.get("tag_name", "")).startswith("v0.3."):
+        raise ValueError("A versão 0.3.x ainda não está disponível em Releases")
+    asset_name = {
+        "Windows": "Chimpi3D-Setup-Windows.exe",
+        "Linux": "Chimpi3D-Linux-x86_64.tar.gz",
+        "macOS": "Chimpi3D-macOS-AppleSilicon.app.zip" if platform.machine().lower() in ("arm64", "aarch64") else "Chimpi3D-macOS-Intel.app.zip",
+    }[os_name]
+    assets = {a["name"]: a for a in release.get("assets", [])}
+    if asset_name not in assets or "SHA256SUMS.txt" not in assets:
+        raise ValueError("Release incompleto: instalador ou lista SHA-256 ausentes")
+    with tempfile.TemporaryDirectory(prefix="chimpi3d-") as root:
+        directory = Path(root)
+        sums_file = directory / "SHA256SUMS.txt"
+        _download(assets["SHA256SUMS.txt"], sums_file)
+        checksum_data = sums_file.read_text(encoding="utf-8")
+        target = directory / asset_name
+        digest = _download(assets[asset_name], target)
+        _verify(checksum_data, asset_name, digest)
+        print("Assinatura SHA-256 verificada. Iniciando instalação...")
+        if os_name == "Windows":
+            subprocess.run([str(target)], check=True)
+        elif os_name == "Linux":
+            _install_linux(target, directory / "extraido")
+        else:
+            _install_macos(target, directory / "extraido")
+    print("Instalação concluída")
+
+
+def main(argv=None):
+    try:
+        opts = parse_command(list(sys.argv[1:] if argv is None else argv))
+        if opts.get("version"):
+            print("of 0.3.0")
+            return 0
+        install(opts)
+        return 0
+    except (ValueError, OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+        print("Erro:", exc, file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
