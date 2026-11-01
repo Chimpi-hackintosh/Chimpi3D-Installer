@@ -1,13 +1,8 @@
 name: macOS APP
 
 on:
+  workflow_call:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - main.py
-      - requirements.txt
-      - .github/workflows/macos.yml
 
 permissions:
   contents: read
