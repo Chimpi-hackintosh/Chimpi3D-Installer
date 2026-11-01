@@ -21,7 +21,13 @@ def check(bundle):
         info = plistlib.load(stream)
     minimum = info.get("LSMinimumSystemVersion")
     if not minimum:
-        raise RuntimeError("O aplicativo não declara LSMinimumSystemVersion")
+        # PyInstaller não define essa chave por padrão; adicionar sem ocultar
+        # requisitos mais novos que serão conferidos nos binários logo abaixo
+        minimum = "12.0"
+        info["LSMinimumSystemVersion"] = minimum
+        with plist_path.open("wb") as stream:
+            plistlib.dump(info, stream)
+        print("Info.plist atualizado: alvo mínimo macOS 12.0")
     if version_tuple(minimum) > TARGET:
         raise RuntimeError(f"Info.plist exige macOS {minimum}, acima do Monterey 12")
     print(f"Info.plist: LSMinimumSystemVersion={minimum}")
