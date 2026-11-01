@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from chimp_features import NFCWallet, rounded_square
+from chimpi_features import NFCWallet, rounded_square
 from of_cli import _verify, parse_command
 
 

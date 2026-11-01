@@ -46,7 +46,7 @@ jobs:
 
       - name: Testar recursos 0.3.0
         run: |
-          python -m compileall -q main.py chimp_features.py of_cli.py
+          python -m compileall -q main.py chimpi_features.py of_cli.py
           python -m unittest discover -s tests -p 'test_v030.py' -v
 
       - name: Compilar Chimpi3D

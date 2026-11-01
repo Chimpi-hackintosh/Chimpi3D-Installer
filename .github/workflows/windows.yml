@@ -16,7 +16,7 @@ jobs:
           cache-dependency-path: requirements.txt
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt pyinstaller
-      - run: python -m compileall -q main.py chimp_features.py of_cli.py
+      - run: python -m compileall -q main.py chimpi_features.py of_cli.py
       - run: python -m unittest discover -s tests -p 'test_v030.py' -v
       - run: python -m PyInstaller --clean --noconfirm --onefile --windowed --name Chimpi3D --collect-all pyqtgraph --collect-all OpenGL main.py
       - name: Compilar comando of.exe
