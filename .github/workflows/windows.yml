@@ -24,7 +24,7 @@ jobs:
       - name: Preparar NSIS
         uses: nsis-dev/setup-nsis@v1
       - name: Compilar instalador NSIS
-        run: makensis /V3 installer/windows.nsi
+        run: makensis /NOCD /V3 installer/windows.nsi
       - name: Confirmar instalador
         shell: pwsh
         run: |
