@@ -1,8 +1,6 @@
 Unicode True
 !include "MUI2.nsh"
-!include "StrFunc.nsh"
 !include "WinMessages.nsh"
-!insertmacro StrStr
 
 Name "Chimpi3D 0.3.0"
 OutFile "Chimpi3D-Setup-Windows.exe"
@@ -32,8 +30,17 @@ Section "Instalar" SEC01
 
   ; Inclui o comando 'of' no PATH do usuário, sem exigir administrador
   ReadRegStr $0 HKCU "Environment" "Path"
-  ${StrStr} $1 "$0" "$INSTDIR"
-  StrCmp $1 "" 0 path_done
+  ; Procura a pasta no PATH sem dependências de macros externas
+  StrLen $2 "$INSTDIR"
+  StrLen $3 "$0"
+  StrCpy $4 0
+path_procurar:
+  IntCmp $4 $3 path_append path_comparar path_append
+path_comparar:
+  StrCpy $1 $0 $2 $4
+  StrCmp $1 "$INSTDIR" path_done
+  IntOp $4 $4 + 1
+  Goto path_procurar
   StrCmp $0 "" 0 path_append
   WriteRegExpandStr HKCU "Environment" "Path" "$INSTDIR"
   Goto path_done
