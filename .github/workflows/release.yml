@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - main.py
-      - chimp_features.py
+      - chimpi_features.py
       - of_cli.py
       - installer/**
       - tests/**
