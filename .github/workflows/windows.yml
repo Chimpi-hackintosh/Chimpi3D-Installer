@@ -16,10 +16,23 @@ jobs:
           cache-dependency-path: requirements.txt
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt pyinstaller
-      - run: python -m compileall -q main.py
+      - run: python -m compileall -q main.py chimp_features.py of_cli.py
+      - run: python -m unittest discover -s tests -p 'test_v030.py' -v
       - run: python -m PyInstaller --clean --noconfirm --onefile --windowed --name Chimpi3D --collect-all pyqtgraph --collect-all OpenGL main.py
+      - name: Compilar comando of.exe
+        run: python -m PyInstaller --clean --noconfirm --onefile --console --name of of_cli.py
+      - name: Preparar NSIS
+        uses: nsis-dev/setup-nsis@v1
+      - name: Compilar instalador NSIS
+        run: makensis /V3 installer/windows.nsi
+      - name: Confirmar instalador
+        shell: pwsh
+        run: |
+          if (!(Test-Path Chimpi3D-Setup-Windows.exe)) { throw 'Instalador NSIS ausente' }
       - uses: actions/upload-artifact@v4
         with:
           name: Chimpi3D-Windows-EXE
-          path: dist/Chimpi3D.exe
+          path: |
+            dist/Chimpi3D.exe
+            Chimpi3D-Setup-Windows.exe
           if-no-files-found: error

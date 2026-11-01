@@ -44,6 +44,11 @@ jobs:
           python -m compileall -q main.py
           python -c "import numpy, trimesh, PIL, requests, PySide6.QtWidgets, PySide6.QtOpenGLWidgets, pyqtgraph.opengl, OpenGL; print('Imports OK')"
 
+      - name: Testar recursos 0.3.0
+        run: |
+          python -m compileall -q main.py chimp_features.py of_cli.py
+          python -m unittest discover -s tests -p 'test_v030.py' -v
+
       - name: Compilar Chimpi3D
         env:
           QT_QPA_PLATFORM: offscreen
@@ -57,6 +62,13 @@ jobs:
             --collect-data pyqtgraph \
             --collect-all OpenGL \
             main.py
+
+      - name: Compilar comando of
+        run: |
+          python -m PyInstaller --clean --noconfirm --onefile \
+            --name of of_cli.py
+          cp dist/of dist/Chimpi3D/of
+          chmod +x dist/Chimpi3D/of
 
       - name: Conferir executável e criar pacote
         run: |

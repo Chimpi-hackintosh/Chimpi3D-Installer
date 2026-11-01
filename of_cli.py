@@ -86,7 +86,7 @@ def _download(asset, target):
 
 
 def _verify(checksums, filename, digest):
-    match = re.search(r"(?m)^([a-fA-F0-9]{64})\\s+\\*?" + re.escape(filename) + r"$", checksums)
+    match = re.search(r"(?m)^([a-fA-F0-9]{64})\s+\*?" + re.escape(filename) + r"$", checksums)
     if not match or digest.lower() != match.group(1).lower():
         raise ValueError("A verificação SHA-256 falhou. Instalação cancelada")
 
@@ -113,7 +113,7 @@ def _install_linux(archive, location):
     bin_dir = Path.home() / ".local" / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
     launcher = bin_dir / "Chimpi3D"
-    launcher.write_text('#!/bin/sh\\nexec "$HOME/.local/share/Chimpi3D/Chimpi3D" "$@"\\n', encoding="utf-8")
+    launcher.write_text('#!/bin/sh\nexec "$HOME/.local/share/Chimpi3D/Chimpi3D" "$@"\n', encoding="utf-8")
     launcher.chmod(0o755)
     shutil.copy2(src / "of", bin_dir / "of")
     (bin_dir / "of").chmod(0o755)

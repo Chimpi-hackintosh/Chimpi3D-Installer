@@ -6,6 +6,10 @@ on:
     branches: [main]
     paths:
       - main.py
+      - chimp_features.py
+      - of_cli.py
+      - installer/**
+      - tests/**
       - requirements.txt
       - .github/workflows/**
 
@@ -40,12 +44,13 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Conferir os quatro arquivos
+      - name: Conferir os cinco arquivos
         shell: bash
         run: |
           set -euo pipefail
           for name in \
             Chimpi3D.exe \
+            Chimpi3D-Setup-Windows.exe \
             Chimpi3D-Linux-x86_64.tar.gz \
             Chimpi3D-macOS-Intel.app.zip \
             Chimpi3D-macOS-AppleSilicon.app.zip
@@ -54,27 +59,41 @@ jobs:
           done
           ls -lh release/
 
+      - name: Calcular SHA-256 dos instaladores
+        run: |
+          cd release
+          sha256sum Chimpi3D.exe Chimpi3D-Setup-Windows.exe \
+            Chimpi3D-Linux-x86_64.tar.gz \
+            Chimpi3D-macOS-Intel.app.zip \
+            Chimpi3D-macOS-AppleSilicon.app.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
       - name: Criar Release e anexar todos os aplicativos
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.2.0-build-${{ github.run_number }}
+          tag_name: v0.3.0-build-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
-          name: Chimpi3D 0.2.0 • Compilação ${{ github.run_number }}
+          name: Chimpi3D 0.3.0 • Compilação ${{ github.run_number }}
           make_latest: true
           prerelease: false
           fail_on_unmatched_files: true
           body: |
-            Chimpi3D 0.2.0 • Compilação automática para Windows, Linux e macOS
+            Chimpi3D 0.3.0 • Compilação automática para Windows, Linux e macOS
 
-            - Windows: Chimpi3D.exe
+            - Windows (executável): Chimpi3D.exe
+            - Windows (instalador NSIS): Chimpi3D-Setup-Windows.exe
             - Linux x86_64: Chimpi3D-Linux-x86_64.tar.gz (extraia a pasta completa)
             - macOS Intel: Chimpi3D-macOS-Intel.app.zip
             - macOS Apple Silicon: Chimpi3D-macOS-AppleSilicon.app.zip
 
             Programa experimental. Compilação verificada no GitHub Actions; a interface gráfica não foi testada em todos os computadores
+            NFC300: 300 etiquetas virtuais opcionais por instalação local, sem chips físicos
+            Quadrado com cantos arredondados no estilo UICorner e comando 'of' incluído no instalador
             Os aplicativos para macOS não possuem assinatura digital nem notarização da Apple
           files: |
             release/Chimpi3D.exe
+            release/Chimpi3D-Setup-Windows.exe
             release/Chimpi3D-Linux-x86_64.tar.gz
             release/Chimpi3D-macOS-Intel.app.zip
             release/Chimpi3D-macOS-AppleSilicon.app.zip
+            release/SHA256SUMS.txt

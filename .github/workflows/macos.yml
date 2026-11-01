@@ -48,6 +48,11 @@ jobs:
           python -m compileall -q main.py
           python -c "import numpy, trimesh, PIL, requests, PySide6.QtWidgets, PySide6.QtOpenGLWidgets, pyqtgraph.opengl, OpenGL; print('Imports OK')"
 
+      - name: Testar recursos 0.3.0
+        run: |
+          python -m compileall -q main.py chimp_features.py of_cli.py
+          python -m unittest discover -s tests -p 'test_v030.py' -v
+
       - name: Compilar Chimpi3D.app
         run: |
           python -m PyInstaller --clean --noconfirm --onedir --windowed \
@@ -61,13 +66,21 @@ jobs:
             --collect-all OpenGL \
             main.py
 
+      - name: Compilar comando of
+        run: |
+          python -m PyInstaller --clean --noconfirm --onefile --name of of_cli.py
+
       - name: Conferir e empacotar o aplicativo
         run: |
           test -d dist/Chimpi3D.app
           test -f dist/Chimpi3D.app/Contents/MacOS/Chimpi3D
           file dist/Chimpi3D.app/Contents/MacOS/Chimpi3D
+          mkdir -p pacote-macos
+          cp -R dist/Chimpi3D.app pacote-macos/Chimpi3D.app
+          cp dist/of pacote-macos/of
+          chmod +x pacote-macos/of
           ditto -c -k --sequesterRsrc --keepParent \
-            dist/Chimpi3D.app \
+            pacote-macos \
             "Chimpi3D-macOS-${{ matrix.arch }}.app.zip"
           test -s "Chimpi3D-macOS-${{ matrix.arch }}.app.zip"
 

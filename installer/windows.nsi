@@ -6,7 +6,7 @@ Unicode True
 
 Name "Chimpi3D 0.3.0"
 OutFile "Chimpi3D-Setup-Windows.exe"
-InstallDir "$LOCALAPPDATA\\Programs\\Chimpi3D"
+InstallDir "$LOCALAPPDATA\Programs\Chimpi3D"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 
@@ -20,15 +20,15 @@ SetCompressor /SOLID lzma
 
 Section "Instalar" SEC01
   SetOutPath "$INSTDIR"
-  File "dist\\Chimpi3D.exe"
-  File "dist\\of.exe"
-  WriteUninstaller "$INSTDIR\\Desinstalar.exe"
-  CreateDirectory "$SMPROGRAMS\\Chimpi3D"
-  CreateShortcut "$SMPROGRAMS\\Chimpi3D\\Chimpi3D.lnk" "$INSTDIR\\Chimpi3D.exe"
-  CreateShortcut "$SMPROGRAMS\\Chimpi3D\\Desinstalar.lnk" "$INSTDIR\\Desinstalar.exe"
-  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Chimpi3D" "DisplayName" "Chimpi3D 0.3.0"
-  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Chimpi3D" "UninstallString" '"$INSTDIR\\Desinstalar.exe"'
-  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Chimpi3D" "InstallLocation" "$INSTDIR"
+  File "dist\Chimpi3D.exe"
+  File "dist\of.exe"
+  WriteUninstaller "$INSTDIR\Desinstalar.exe"
+  CreateDirectory "$SMPROGRAMS\Chimpi3D"
+  CreateShortcut "$SMPROGRAMS\Chimpi3D\Chimpi3D.lnk" "$INSTDIR\Chimpi3D.exe"
+  CreateShortcut "$SMPROGRAMS\Chimpi3D\Desinstalar.lnk" "$INSTDIR\Desinstalar.exe"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "DisplayName" "Chimpi3D 0.3.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "UninstallString" '"$INSTDIR\Desinstalar.exe"'
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "InstallLocation" "$INSTDIR"
 
   ; Inclui o comando 'of' no PATH do usuário, sem exigir administrador
   ReadRegStr $0 HKCU "Environment" "Path"
@@ -44,13 +44,13 @@ path_done:
 SectionEnd
 
 Section "Desinstalar"
-  Delete "$INSTDIR\\Chimpi3D.exe"
-  Delete "$INSTDIR\\of.exe"
-  Delete "$INSTDIR\\Desinstalar.exe"
+  Delete "$INSTDIR\Chimpi3D.exe"
+  Delete "$INSTDIR\of.exe"
+  Delete "$INSTDIR\Desinstalar.exe"
   RMDir "$INSTDIR"
-  Delete "$SMPROGRAMS\\Chimpi3D\\Chimpi3D.lnk"
-  Delete "$SMPROGRAMS\\Chimpi3D\\Desinstalar.lnk"
-  RMDir "$SMPROGRAMS\\Chimpi3D"
-  DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Chimpi3D"
+  Delete "$SMPROGRAMS\Chimpi3D\Chimpi3D.lnk"
+  Delete "$SMPROGRAMS\Chimpi3D\Desinstalar.lnk"
+  RMDir "$SMPROGRAMS\Chimpi3D"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D"
   ; Não altera outros aplicativos no PATH do usuário
 SectionEnd
