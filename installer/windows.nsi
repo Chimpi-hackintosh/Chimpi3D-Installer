@@ -2,7 +2,8 @@ Unicode True
 !include "MUI2.nsh"
 !include "WinMessages.nsh"
 
-Name "Chimpi3D 0.3.0"
+!define APP_VERSION "0.3.1"
+Name "Chimpi3D ${APP_VERSION}"
 OutFile "Chimpi3D-Setup-Windows.exe"
 InstallDir "$LOCALAPPDATA\Programs\Chimpi3D"
 RequestExecutionLevel user
@@ -24,7 +25,8 @@ Section "Instalar" SEC01
   CreateDirectory "$SMPROGRAMS\Chimpi3D"
   CreateShortcut "$SMPROGRAMS\Chimpi3D\Chimpi3D.lnk" "$INSTDIR\Chimpi3D.exe"
   CreateShortcut "$SMPROGRAMS\Chimpi3D\Desinstalar.lnk" "$INSTDIR\Desinstalar.exe"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "DisplayName" "Chimpi3D 0.3.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "DisplayName" "Chimpi3D ${APP_VERSION}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "DisplayVersion" "${APP_VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "UninstallString" '"$INSTDIR\Desinstalar.exe"'
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Chimpi3D" "InstallLocation" "$INSTDIR"
 

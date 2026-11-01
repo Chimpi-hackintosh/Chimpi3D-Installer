@@ -8,7 +8,9 @@ on:
       - of_cli.py
       - tests/**
       - requirements.txt
+      - installer/**
       - .github/workflows/tests.yml
+      - .github/workflows/windows.yml
   workflow_dispatch:
 
 permissions:
@@ -30,3 +32,7 @@ jobs:
         run: python -m compileall -q main.py chimpi_features.py of_cli.py
       - name: Testar recursos e atualização sem acessar o perfil real
         run: python -m unittest discover -s tests -p 'test_v030.py' -v
+
+  windows:
+    name: Compilar instalador Windows
+    uses: ./.github/workflows/windows.yml
