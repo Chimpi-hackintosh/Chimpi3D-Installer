@@ -1,0 +1,4 @@
+# Qt 6.8 é a última linha escolhida para mirar macOS Monterey 12+
+# Qt 6.12 passou a exigir macOS 14.4 ou superior
+-r requirements.txt
+PySide6==6.8.3
