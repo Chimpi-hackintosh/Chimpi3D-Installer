@@ -121,3 +121,7 @@ python main.py
 ```
 
 Os workflows verificam compilação e testes automatizados, mas não substituem testes gráficos reais nos três sistemas
+
+## Aviso de suporte
+
+Aviso traduzido, data de 04/11/2026, versões e limites de distribuição em [SUPPORT.md](SUPPORT.md)
