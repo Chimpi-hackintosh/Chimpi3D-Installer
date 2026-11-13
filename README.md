@@ -61,6 +61,8 @@ of my pc --os Linux --edition Linux Mint install Chimpi3D
 
 A instalação busca **automaticamente** o aplicativo no GitHub Releases oficial, confere o arquivo com **SHA-256** e o instala, sem que a pessoa tenha que baixar o pacote manualmente. A conexão com a internet é necessária
 
+No Linux, a instalação pelo comando `of` requer Python **3.11.4 ou superior** (Python 3.12+ recomendado), pois o extrator exige `tarfile.data_filter`; versões sem esse filtro abortam antes de extrair o pacote
+
 **Não existe instalação sem transferir os arquivos do programa**: a transferência acontece em segundo plano no comando, e o procedimento e a origem são informados ao usuário
 
 **Primeira instalação do `of`:** no Windows, o instalador NSIS inclui e registra `of.exe` no PATH do usuário; abra um novo terminal após a instalação. No Linux e macOS, o executável `of` acompanha os arquivos distribuídos e precisa estar disponível no diretório `~/.local/bin` incluído no PATH para ser chamado somente por `of`
