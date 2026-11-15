@@ -14,6 +14,7 @@ import sys
 import tarfile
 import tempfile
 import urllib.request
+import uuid
 from pathlib import Path
 
 OWNER = "Chimpi-hackintosh"
@@ -136,6 +137,46 @@ def _verify(checksums, filename, digest):
         raise ValueError("A verificação SHA-256 falhou. Instalação cancelada")
 
 
+def _replace_application(source, destination):
+    """Prepare the full copy before replacing the installed application."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".chimpi3d-stage-", dir=destination.parent) as temporary:
+        staged = Path(temporary) / destination.name
+        shutil.copytree(source, staged, symlinks=True)
+        backup = destination.with_name(f".{destination.name}.backup-{uuid.uuid4().hex}")
+        previous = destination.exists() or destination.is_symlink()
+        if previous:
+            destination.rename(backup)
+        try:
+            staged.rename(destination)
+        except BaseException:
+            if previous:
+                try:
+                    backup.rename(destination)
+                except OSError as error:
+                    # Keep the only good copy outside the temporary directory.
+                    raise RuntimeError(f"A versão anterior foi preservada em {backup}") from error
+            raise
+        if previous:
+            if backup.is_symlink() or backup.is_file():
+                backup.unlink()
+            else:
+                shutil.rmtree(backup)
+
+
+def _replace_launcher(source, destination):
+    """Replace the launcher inode, allowing a running Linux 'of' to update itself."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=f".{destination.name}-", dir=destination.parent)
+    os.close(descriptor)
+    try:
+        shutil.copy2(source, temporary)
+        Path(temporary).chmod(0o755)
+        os.replace(temporary, destination)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
 def _install_linux(archive, location):
     destination = Path.home() / ".local" / "share" / "Chimpi3D"
     with tarfile.open(archive, "r:gz") as tf:
@@ -145,23 +186,13 @@ def _install_linux(archive, location):
     src = location / "Chimpi3D"
     if not (src / "Chimpi3D").is_file() or not (src / "of").is_file():
         raise ValueError("Pacote Linux incompleto")
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    backup = location / "backup-linux"
-    if destination.exists():
-        shutil.move(str(destination), str(backup))
-    try:
-        shutil.copytree(src, destination, symlinks=True)
-    except Exception:
-        if backup.exists():
-            shutil.move(str(backup), str(destination))
-        raise
+    _replace_application(src, destination)
     bin_dir = Path.home() / ".local" / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
     launcher = bin_dir / "Chimpi3D"
     launcher.write_text('#!/bin/sh\nexec "$HOME/.local/share/Chimpi3D/Chimpi3D" "$@"\n', encoding="utf-8")
     launcher.chmod(0o755)
-    shutil.copy2(src / "of", bin_dir / "of")
-    (bin_dir / "of").chmod(0o755)
+    _replace_launcher(src / "of", bin_dir / "of")
     print("Chimpi3D instalado em", destination)
     print("Certifique-se de incluir ~/.local/bin no PATH do terminal")
 
@@ -174,22 +205,12 @@ def _install_macos(archive, location):
         raise ValueError("Aplicativo macOS não encontrado no ZIP")
     src = apps[0]
     dest = Path.home() / "Applications" / "Chimpi3D.app"
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    backup = location / "backup-macos.app"
-    if dest.exists():
-        shutil.move(str(dest), str(backup))
-    try:
-        shutil.copytree(src, dest, symlinks=True)
-    except Exception:
-        if backup.exists():
-            shutil.move(str(backup), str(dest))
-        raise
+    _replace_application(src, dest)
     of_files = [p for p in location.rglob("of") if p.is_file()]
     if of_files:
         bin_dir = Path.home() / ".local" / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(of_files[0], bin_dir / "of")
-        (bin_dir / "of").chmod(0o755)
+        _replace_launcher(of_files[0], bin_dir / "of")
     print("Chimpi3D instalado em", dest)
     print("O aplicativo não é notarizado pela Apple. Respeite as verificações de segurança do macOS")
 
